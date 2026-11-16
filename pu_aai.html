@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>靜宜大學・人工智慧應用學系 | PU AAI 智慧領航島</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-deep: #06101c;
+      --bg-panel: rgba(9, 22, 38, 0.88);
+      --gold: #d4af37;
+      --gold-light: #f3e5ab;
+      --cyan: #38bdf8;
+      --text-main: #f8fafc;
+      --text-muted: #cbd5e1;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-deep);
+      color: var(--text-main);
+      font-family: 'Inter', 'Noto Sans TC', sans-serif;
+    }
+
+    .font-serif-tc {
+      font-family: 'Noto Serif TC', serif;
+    }
+
+    /* Diagonal pinstripe luxury tech background (inspired by reference site) */
+    .pinstripe-bg {
+      background-color: #06111e;
+      background-image: repeating-linear-gradient(
+        -45deg,
+        rgba(212, 175, 55, 0.04) 0px,
+        rgba(212, 175, 55, 0.04) 1px,
+        transparent 1px,
+        transparent 14px
+      );
+    }
+
+    /* Double-line gold border card */
+    .double-gold-card {
+      position: relative;
+      background: linear-gradient(160deg, rgba(10, 26, 44, 0.96), rgba(5, 14, 26, 0.98));
+      border: 1px solid rgba(212, 175, 55, 0.65);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75), inset 0 0 30px rgba(56, 189, 248, 0.06);
+    }
+    .double-gold-card::before {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border: 1px solid rgba(212, 175, 55, 0.35);
+      border-radius: inherit;
+      pointer-events: none;
+    }
+
+    .gold-pill-btn {
+      background: linear-gradient(135deg, #e5c158 0%, #c59b27 100%);
+      color: #07111e;
+      font-weight: 700;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+      box-shadow: 0 4px 20px rgba(212, 175, 55, 0.35);
+    }
+    .gold-pill-btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.08);
+      box-shadow: 0 6px 26px rgba(212, 175, 55, 0.5);
+    }
+
+    .glass-hud {
+      background: rgba(7, 18, 32, 0.82);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(212, 175, 55, 0.32);
+    }
+
+    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.4); border-radius: 999px; }
+
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.65; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.06); }
+    }
+    .animate-glow { animation: pulseGlow 3s ease-in-out infinite; }
+
+    #canvas-container canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+    #canvas-container canvas:active { cursor: grabbing; }
+
+    .landmark-label {
+      position: absolute;
+      transform: translate(-50%, -120%);
+      pointer-events: auto;
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+      white-space: nowrap;
+    }
+    .landmark-label:hover {
+      transform: translate(-50%, -128%) scale(1.05);
+    }
+  </style>
+</head>
+<body class="pinstripe-bg select-none">
+
+  <!-- Welcome / Concierge Entry Overlay (Inspired by nkuht-htl.drmjhsu.com) -->
+  <div id="welcome-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 pinstripe-bg transition-opacity duration-700">
+    <div class="double-gold-card rounded-2xl max-w-lg w-full p-8 sm:p-10 text-center relative z-10">
+      <!-- 5 Gold Stars -->
+      <div class="flex items-center justify-center gap-2 text-[#d4af37] text-sm tracking-widest mb-5">
+        <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+      </div>
+
+      <!-- Circular Emblem -->
+      <div class="mx-auto w-24 h-24 mb-5 relative flex items-center justify-center">
+        <svg viewBox="0 0 120 120" class="w-full h-full">
+          <circle cx="60" cy="60" r="56" fill="#081626" stroke="#d4af37" stroke-width="2" />
+          <circle cx="60" cy="60" r="46" fill="none" stroke="#38bdf8" stroke-width="1" stroke-dasharray="3 3" />
+          <defs>
+            <path id="crestPathTop" d="M 16,60 A 44,44 0 1,1 104,60" />
+            <path id="crestPathBot" d="M 104,60 A 44,44 0 1,1 16,60" />
+          </defs>
+          <text fill="#d4af37" font-size="7.2" font-weight="700" letter-spacing="1.8">
+            <textPath href="#crestPathTop" startOffset="50%" text-anchor="middle">APPLIED ARTIFICIAL INTELLIGENCE</textPath>
+          </text>
+          <text fill="#94a3b8" font-size="7" font-weight="600" letter-spacing="2">
+            <textPath href="#crestPathBot" startOffset="50%" text-anchor="middle">PROVIDENCE UNIVERSITY</textPath>
+          </text>
+          <text x="60" y="57" text-anchor="middle" fill="#f8fafc" font-size="16" font-weight="700" font-family="Inter, sans-serif">PU</text>
+          <text x="60" y="72" text-anchor="middle" fill="#38bdf8" font-size="11" font-weight="700" letter-spacing="1.5">AAI</text>
+        </svg>
+      </div>
+
+      <p class="text-[11px] sm:text-xs uppercase tracking-[0.22em] text-[#d4af37] font-semibold mb-2">
+        THE GRAND PU APPLIED AI · EST. 114
+      </p>
+      <h1 class="font-serif-tc text-2xl sm:text-3xl font-bold text-white tracking-wide mb-2">
+        靜宜大學・人工智慧應用學系
+      </h1>
+      <p class="text-xs sm:text-sm text-slate-300 mb-6 leading-relaxed">
+        科技為經・藝術為緯・文化為本・創意為用<br/>
+        <span id="loading-status" class="text-[#38bdf8]">正在開啟 AI 智慧領航島與 3D 實驗園區...</span>
+      </p>
+
+      <!-- Progress Bar -->
+      <div class="w-full h-1.5 bg-slate-800/90 rounded-full overflow-hidden mb-6 border border-[#d4af37]/20">
+        <div id="loading-bar" class="h-full bg-gradient-to-r from-[#d4af37] via-[#f3e5ab] to-[#38bdf8] transition-all duration-300" style="width: 25%"></div>
+      </div>
+
+      <button id="enter-island-btn" type="button" class="gold-pill-btn rounded-full px-8 py-3 text-sm tracking-wider inline-flex items-center gap-2 cursor-pointer">
+        <span>登上 AI 智慧領航島</span>
+        <span aria-hidden="true">→</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main 3D Interactive Canvas -->
+  <div id="canvas-container" class="fixed inset-0 z-0"></div>
+
+  <!-- 2D Isometric Fallback (shown automatically only if WebGL fails) -->
+  <div id="fallback-2d" class="hidden fixed inset-0 z-0 flex items-center justify-center p-6 pinstripe-bg overflow-auto">
+    <div class="max-w-4xl w-full glass-hud rounded-2xl p-6 sm:p-8 text-center">
+      <p class="text-xs uppercase tracking-widest text-[#d4af37] mb-1">2D 領航導覽模式</p>
+      <h2 class="font-serif-tc text-2xl font-bold text-white mb-2">靜宜大學人工智慧應用學系・智慧領航島</h2>
+      <p class="text-xs text-slate-300 mb-6">點擊下方任一園區地標，探索學系特色、課程地圖、XR/A100 實驗室與師資陣容。</p>
+      <div id="fallback-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-left"></div>
+    </div>
+  </div>
+
+  <!-- 3D Projected Floating Labels -->
+  <div id="labels-layer" class="fixed inset-0 z-10 pointer-events-none overflow-hidden"></div>
+
+  <!-- Top Navigation HUD -->
+  <header class="fixed top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+    <div class="glass-hud rounded-full px-4 py-2 flex items-center gap-3 pointer-events-auto shadow-lg">
+      <div class="w-8 h-8 rounded-full bg-[#0a1a2e] border border-[#d4af37] flex items-center justify-center text-[11px] font-bold text-[#d4af37]">
+        AAI
+      </div>
+      <div class="leading-tight">
+        <div class="font-serif-tc text-sm font-bold text-white">靜宜大學・人工智慧應用學系</div>
+        <div class="text-[10px] text-[#d4af37] tracking-wider hidden sm:block">DEPT. OF APPLIED ARTIFICIAL INTELLIGENCE</div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2 pointer-events-auto">
+      <button id="btn-tour" type="button" class="gold-pill-btn rounded-full px-3.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer">
+        <span>✦</span><span>一鍵導覽</span>
+      </button>
+      <button id="btn-orbit" type="button" class="glass-hud hover:border-[#d4af37] text-slate-200 rounded-full px-3 py-1.5 text-xs transition cursor-pointer">
+        自動旋轉: 開
+      </button>
+      <button id="btn-reset" type="button" class="glass-hud hover:border-[#d4af37] text-slate-200 rounded-full px-3 py-1.5 text-xs transition cursor-pointer">
+        重置視角
+      </button>
+    </div>
+  </header>
+
+  <!-- Bottom Landmark Dock -->
+  <nav aria-label="園區地標導覽" class="fixed bottom-3 left-1/2 -translate-x-1/2 z-20 max-w-[96vw] pointer-events-auto">
+    <div id="landmark-dock" class="glass-hud rounded-2xl sm:rounded-full px-2 py-1.5 flex items-center gap-1 overflow-x-auto custom-scroll shadow-2xl">
+      <!-- Populated by JS -->
+    </div>
+  </nav>
+
+  <!-- Slide-Over Detail Drawer -->
+  <aside id="detail-drawer" class="fixed top-16 bottom-16 right-3 z-30 w-[calc(100vw-1.5rem)] sm:w-[440px] md:w-[480px] double-gold-card rounded-2xl flex flex-col overflow-hidden transform translate-x-[115%] transition-transform duration-300 ease-out">
+    <div class="px-5 pt-5 pb-3 border-b border-[#d4af37]/25 flex items-start justify-between gap-3">
+      <div>
+        <div id="drawer-badge" class="text-[10px] uppercase tracking-[0.2em] text-[#38bdf8] font-semibold mb-1">LANDMARK</div>
+        <h2 id="drawer-title" class="font-serif-tc text-xl font-bold text-white leading-snug">地標名稱</h2>
+      </div>
+      <button id="drawer-close" type="button" aria-label="關閉視窗" class="w-8 h-8 rounded-full bg-slate-800/80 hover:bg-[#d4af37] hover:text-slate-950 text-slate-300 flex items-center justify-center transition cursor-pointer shrink-0">
+        ✕
+      </button>
+    </div>
+
+    <div id="drawer-body" class="p-5 overflow-y-auto custom-scroll flex-1 text-sm text-slate-200 space-y-4">
+      <!-- Dynamic Content -->
+    </div>
+
+    <div class="px-5 py-3 border-t border-[#d4af37]/20 bg-slate-950/60 flex items-center justify-between gap-2 text-xs">
+      <button id="drawer-prev" type="button" class="px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 transition cursor-pointer">
+        ← 上一站
+      </button>
+      <span id="drawer-step" class="text-[#d4af37] font-medium">1 / 6</span>
+      <button id="drawer-next" type="button" class="px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 transition cursor-pointer">
+        下一站 →
+      </button>
+    </div>
+  </aside>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-40 glass-hud rounded-full px-4 py-2 text-xs text-[#f3e5ab] opacity-0 pointer-events-none transition-opacity duration-300"></div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      // ==========================================
+      // 1. Grounded Department Data (PU AAI)
+      // ==========================================
+      const LANDMARKS = [
+        {
+          id: "hub",
+          code: "01 · DEPT HUB",
+          shortName: "AI 領航主樓",
+          title: "主顧樓 AI 領航中心",
+          icon: "🏛️",
+          color: 0xd4af37,
+          pos: [0, 0, 0],
+          camOffset: [9, 6.5, 11],
+          summary: "114 學年度由「資訊傳播工程學系」正式更名為「人工智慧應用學系」，隸屬靜宜大學資訊學院。",
+          render: () => `
+            <div class="rounded-xl bg-slate-900/70 border border-[#d4af37]/30 p-4 space-y-2">
+              <div class="text-xs text-[#d4af37] font-semibold tracking-wider">設立宗旨與核心理念</div>
+              <p class="text-slate-200 leading-relaxed">以培育具人工智慧能力之資通訊技術與應用人才為宗旨，秉持「<strong class="text-[#f3e5ab]">科技為經、藝術為緯、文化為本、創意為用</strong>」理念，結合資訊工程軟體設計力與數位媒體美學創作力。</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="rounded-xl bg-slate-900/60 border border-slate-700/70 p-3">
+                <div class="text-[11px] text-slate-400">學制與畢業學分</div>
+                <div class="text-base font-bold text-white mt-0.5">學士班 128 學分</div>
+                <div class="text-xs text-[#38bdf8]">碩士班 36 學分</div>
+              </div>
+              <div class="rounded-xl bg-slate-900/60 border border-slate-700/70 p-3">
+                <div class="text-[11px] text-slate-400">所屬學院</div>
+                <div class="text-base font-bold text-white mt-0.5">資訊學院</div>
+                <div class="text-xs text-[#d4af37]">College of Computing</div>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <div class="text-xs font-semibold text-[#38bdf8] uppercase tracking-wider">教學特色亮點</div>
+              <ul class="space-y-2 text-xs text-slate-300 leading-relaxed">
+                <li class="flex gap-2"><span class="text-[#d4af37]">◆</span><span><strong>實作導向學習</strong>：理論與實務並重，搭配專任助教與自主學習社群，培育解決實務問題能力。</span></li>
+                <li class="flex gap-2"><span class="text-[#d4af37]">◆</span><span><strong>畢業專題成果展</strong>：2～4 人小組跨學期完成 AI、系統開發、XR 互動或遊戲設計專案並公開展出。</span></li>
+                <li class="flex gap-2"><span class="text-[#d4af37]">◆</span><span><strong>暑期與全學期企業實習</strong>：大四可參與校外企業實習，無縫接軌「畢業即就業」。</span></li>
+              </ul>
+            </div>
+          `
+        },
+        {
+          id: "tracks",
+          code: "02 · FOUR PILLARS",
+          shortName: "四大核心學群",
+          title: "四大跨域核心學群館",
+          icon: "💠",
+          color: 0x38bdf8,
+          pos: [-6.5, 0, -3.2],
+          camOffset: [-13, 5.5, 4],
+          summary: "以人工智慧為核心，橫向整合資料科學、互動元宇宙、科技藝術與數位人文四大應用領域。",
+          render: () => {
+            const tracks = [
+              {
+                key: "ds",
+                name: "人工智慧與資料科學 (AI + DS)",
+                tag: "核心技術",
+                courses: ["機器學習概論", "深度學習", "類神經網路概論", "資料科學概論與大數據分析", "AI 智慧醫療實務應用", "雲端運算應用與服務", "AI 資安應用"]
+              },
+              {
+                key: "xr",
+                name: "科技互動元宇宙 (AI + XR)",
+                tag: "體感實作",
+                courses: ["虛擬實境體驗系統開發 (Unity3D)", "擴增實境互動系統開發", "2D / 3D 遊戲設計", "人機介面與 UX 設計", "行動應用軟體開發", "物聯網互動設計入門"]
+              },
+              {
+                key: "ta",
+                name: "科技藝術與多媒體 (AI + TA)",
+                tag: "美學創作",
+                courses: ["智慧電腦視覺", "3D 電腦動畫 (3DsMAX)", "數位特效與影像美學", "互動繪本設計", "智慧輔具設計", "配樂與影像氛圍"]
+              },
+              {
+                key: "dh",
+                name: "數位人文與智慧應用 (AI + DH)",
+                tag: "生成式 AI",
+                courses: ["自然語言處理", "大型語言模型概論", "AI 與數位人文應用", "AI 在教育上的應用", "AI 與資料庫最佳化", "職場倫理與智慧財產"]
+              }
+            ];
+            return `
+              <p class="text-xs text-slate-300 leading-relaxed">點擊下方學群標籤，查看各領域重點專業選修課程：</p>
+              <div class="flex flex-wrap gap-1.5" id="track-tabs">
+                ${tracks.map((t, i) => `
+                  <button type="button" data-track="${t.key}" class="track-tab-btn px-3 py-1.5 rounded-full text-xs font-medium border transition cursor-pointer ${i === 0 ? 'bg-[#d4af37] text-slate-950 border-[#d4af37]' : 'bg-slate-900/70 text-slate-300 border-slate-700 hover:border-[#d4af37]/60'}">
+                    ${t.name.split(' ')[0]}
+                  </button>
+                `).join("")}
+              </div>
+              <div id="track-detail-box" class="rounded-xl bg-slate-900/80 border border-[#38bdf8]/30 p-4 space-y-3">
+                ${renderTrackBox(tracks[0])}
+              </div>
+            `;
+          },
+          onMount: () => {
+            const tracks = {
+              ds: { name: "人工智慧與資料科學 (AI + DS)", tag: "核心技術", courses: ["機器學習概論", "深度學習", "類神經網路概論", "資料科學概論與大數據分析", "AI 智慧醫療實務應用", "雲端運算應用與服務", "AI 資安應用"] },
+              xr: { name: "科技互動元宇宙 (AI + XR)", tag: "體感實作", courses: ["虛擬實境體驗系統開發 (Unity3D)", "擴增實境互動系統開發", "2D / 3D 遊戲設計", "人機介面與 UX 設計", "行動應用軟體開發", "物聯網互動設計入門"] },
+              ta: { name: "科技藝術與多媒體 (AI + TA)", tag: "美學創作", courses: ["智慧電腦視覺", "3D 電腦動畫 (3DsMAX)", "數位特效與影像美學", "互動繪本設計", "智慧輔具設計", "配樂與影像氛圍"] },
+              dh: { name: "數位人文與智慧應用 (AI + DH)", tag: "生成式 AI", courses: ["自然語言處理", "大型語言模型概論", "AI 與數位人文應用", "AI 在教育上的應用", "AI 與資料庫最佳化", "職場倫理與智慧財產"] }
+            };
+            const btns = document.querySelectorAll(".track-tab-btn");
+            const box = document.getElementById("track-detail-box");
+            btns.forEach(btn => {
+              btn.addEventListener("click", () => {
+                btns.forEach(b => {
+                  b.className = "track-tab-btn px-3 py-1.5 rounded-full text-xs font-medium border transition cursor-pointer bg-slate-900/70 text-slate-300 border-slate-700 hover:border-[#d4af37]/60";
+                });
+                btn.className = "track-tab-btn px-3 py-1.5 rounded-full text-xs font-medium border transition cursor-pointer bg-[#d4af37] text-slate-950 border-[#d4af37]";
+                box.innerHTML = renderTrackBox(tracks[btn.dataset.track]);
+              });
+            });
+          }
+        },
+        {
+          id: "curriculum",
+          code: "03 · CURRICULUM",
+          shortName: "四年課程地圖",
+          title: "四年制核心課程地圖塔",
+          icon: "📚",
+          color: 0xa855f7,
+          pos: [6.5, 0, -3.5],
+          camOffset: [12, 5.5, 4],
+          summary: "從大一數理與程式基礎出發，大二強化資料結構與推論邏輯，大三進入機器學習與專案實作，大四銜接畢業專題與企業實習。",
+          render: () => `
+            <div class="grid grid-cols-4 gap-1.5" id="year-tabs">
+              <button type="button" data-year="y1" class="year-tab-btn py-2 rounded-lg text-xs font-semibold bg-[#d4af37] text-slate-950 cursor-pointer">大一必修</button>
+              <button type="button" data-year="y2" class="year-tab-btn py-2 rounded-lg text-xs font-semibold bg-slate-800/80 text-slate-300 hover:bg-slate-700 cursor-pointer">大二必修</button>
+              <button type="button" data-year="y3" class="year-tab-btn py-2 rounded-lg text-xs font-semibold bg-slate-800/80 text-slate-300 hover:bg-slate-700 cursor-pointer">大三必修</button>
+              <button type="button" data-year="y4" class="year-tab-btn py-2 rounded-lg text-xs font-semibold bg-slate-800/80 text-slate-300 hover:bg-slate-700 cursor-pointer">大四實戰</button>
+            </div>
+            <div id="year-detail-box" class="rounded-xl bg-slate-900/80 border border-purple-400/30 p-4 space-y-3"></div>
+            <div class="rounded-xl bg-slate-900/60 border border-[#d4af37]/25 p-3.5 text-xs text-slate-300 leading-relaxed">
+              <span class="text-[#d4af37] font-semibold">IEET 認證與課綱進化：</span>115 學年度起將線性代數列為核心基礎訓練，強化 AI 演算法與多媒體系統設計整合能力。
+            </div>
+          `,
+          onMount: () => {
+            const years = {
+              y1: {
+                subtitle: "大一｜程式與數理基石",
+                desc: "建立計算機科學、資訊數學與前端網頁設計基礎，同步導入 AI 概論。",
+                items: ["人工智慧概論", "程式設計 / 進階程式設計", "計算機概論 (一)(二)", "資訊數學", "離散數學", "數位設計基礎", "網頁前端程式設計"]
+              },
+              y2: {
+                subtitle: "大二｜演算法與媒體架構",
+                desc: "深化資料結構與推論邏輯，並透過「數位作品實作(一)」產出跨域作品。",
+                items: ["資料結構", "網路通訊概論", "數位媒體設計", "搜尋方法與推論邏輯", "數位作品實作 (一)"]
+              },
+              y3: {
+                subtitle: "大三｜機器學習與專案開發",
+                desc: "進入機器學習、機率統計與作業系統核心，啟動學年制團隊專案。",
+                items: ["機器學習概論", "機率與統計", "作業系統", "演算法概論", "數位作品實作 (二)", "專案實作 (一)"]
+              },
+              y4: {
+                subtitle: "大四｜畢業成果展與企業實習",
+                desc: "完成畢業專題成果展審查，並可參與暑期或全學期校外企業實習。",
+                items: ["專案實作 (二)", "資訊學院畢業專題成果展", "暑期 / 全學期校外企業實習"]
+              }
+            };
+            const box = document.getElementById("year-detail-box");
+            const renderY = (k) => {
+              const y = years[k];
+              box.innerHTML = `
+                <div class="text-sm font-bold text-white">${y.subtitle}</div>
+                <p class="text-xs text-slate-300">${y.desc}</p>
+                <div class="flex flex-wrap gap-1.5 pt-1">
+                  ${y.items.map(c => `<span class="px-2.5 py-1 rounded-md bg-purple-500/15 border border-purple-400/30 text-xs text-purple-200">${c}</span>`).join("")}
+                </div>
+              `;
+            };
+            renderY("y1");
+            const btns = document.querySelectorAll(".year-tab-btn");
+            btns.forEach(btn => {
+              btn.addEventListener("click", () => {
+                btns.forEach(b => b.className = "year-tab-btn py-2 rounded-lg text-xs font-semibold bg-slate-800/80 text-slate-300 hover:bg-slate-700 cursor-pointer");
+                btn.className = "year-tab-btn py-2 rounded-lg text-xs font-semibold bg-[#d4af37] text-slate-950 cursor-pointer";
+                renderY(btn.dataset.year);
+              });
+            });
+          }
+        },
+        {
+          id: "labs",
+          code: "04 · LABS & GPU",
+          shortName: "XR 與 AI 實驗室",
+          title: "XR 體感與 A100 高速運算實驗室",
+          icon: "🥽",
+          color: 0x10b981,
+          pos: [-5.8, 0, 5.2],
+          camOffset: [-11, 5.5, 11],
+          summary: "斥資建置 XR 體感互動教室、A100 高速運算資源與 305 專業電腦教室，全面支援深度學習與元宇宙開發。",
+          render: () => `
+            <div class="space-y-3">
+              <div class="rounded-xl bg-slate-900/80 border border-emerald-400/30 p-4">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="font-bold text-emerald-300">XR 體感互動教室</span>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200">VR / AR / MR</span>
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed">配備 Dell OptiPlex 專業工作站、NVIDIA 高階顯示卡，以及充足的 <strong>Meta Quest 2 / Quest Pro MR 眼鏡</strong>與 <strong>HTC VIVA AR 眼鏡</strong>，支援 Unity3D 體感與沉浸式互動開發。</p>
+              </div>
+              <div class="rounded-xl bg-slate-900/80 border border-[#38bdf8]/30 p-4">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="font-bold text-[#38bdf8]">AI 高速運算與 305 教室</span>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-200">GPU Compute</span>
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed">提供 <strong>NVIDIA A100</strong> 運算資源與 <strong>305 教室 33 台高效能 PC</strong>，滿足大型語言模型、電腦視覺與深度學習實作課程需求。</p>
+              </div>
+              <div class="rounded-xl bg-slate-900/80 border border-[#d4af37]/30 p-4">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="font-bold text-[#f3e5ab]">沉浸式攝影棚與錄音室</span>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200">Media Studio</span>
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed">備有多套中高階攝影機、360 全景攝影機與動作捕捉設備，結合數位剪輯與特效製作，產出完整影視動畫與互動策展作品。</p>
+              </div>
+            </div>
+          `
+        },
+        {
+          id: "faculty",
+          code: "05 · FACULTY & ALUMNI",
+          shortName: "師資與系友殿堂",
+          title: "師資陣容與傑出系友名人堂",
+          icon: "🎓",
+          color: 0xf59e0b,
+          pos: [5.8, 0, 5.2],
+          camOffset: [11, 5.5, 11],
+          summary: "集結人工智慧、電腦視覺、資訊安全、AR/VR、數位典藏與多媒體藝術領域師資，培育橫跨軟體科技與創意產業的系友。",
+          render: () => `
+            <div class="space-y-2">
+              <div class="text-xs font-semibold text-[#d4af37] uppercase tracking-wider">學術領航與專任師資領域</div>
+              <div class="rounded-xl bg-slate-900/80 border border-[#d4af37]/30 p-3.5 space-y-2 text-xs">
+                <div>
+                  <div class="font-bold text-white text-sm">莊潤洲 教授兼系主任</div>
+                  <div class="text-slate-300 mt-0.5">專長：人工智慧、數位影像處理、資訊安全、AI 自然語言處理與生成式 AI 應用</div>
+                </div>
+                <div class="border-t border-slate-800 pt-2">
+                  <div class="font-bold text-white text-sm">劉國有 教授兼資訊學院院長</div>
+                  <div class="text-slate-300 mt-0.5">專長：數位科技學習、Web 技術與應用、AR/VR 應用開發、作業系統 MOOCs</div>
+                </div>
+                <div class="border-t border-slate-800 pt-2 text-slate-300">
+                  <span class="text-[#38bdf8] font-semibold">多元專任研究群：</span>涵蓋多媒體網路系統與數位遊戲、演算法與資訊系統設計、資料探勘與商業智慧、數位典藏與語意網、配樂製作與跨文化藝術研究。
+                </div>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <div class="text-xs font-semibold text-[#38bdf8] uppercase tracking-wider">傑出系友職涯表現</div>
+              <div class="grid grid-cols-1 gap-2 text-xs">
+                <div class="rounded-lg bg-slate-900/60 border border-slate-800 p-2.5 flex justify-between items-center">
+                  <div><strong class="text-white">黃司雅</strong> <span class="text-slate-400">· 臺科大碩士</span></div>
+                  <span class="text-[#38bdf8]">HTC VR 資深工程師 / Picchu 共同創辦人</span>
+                </div>
+                <div class="rounded-lg bg-slate-900/60 border border-slate-800 p-2.5 flex justify-between items-center">
+                  <div><strong class="text-white">王綉瑤</strong> <span class="text-slate-400">· 雲科大碩士</span></div>
+                  <span class="text-[#f3e5ab]">工研院工程師 → 鐵雲科技軟體開發經理</span>
+                </div>
+                <div class="rounded-lg bg-slate-900/60 border border-slate-800 p-2.5 flex justify-between items-center">
+                  <div><strong class="text-white">陳丞卲</strong> <span class="text-slate-400">· 本系碩士</span></div>
+                  <span class="text-emerald-300">拓璞工程顧問 系統研發部經理</span>
+                </div>
+                <div class="rounded-lg bg-slate-900/60 border border-slate-800 p-2.5 flex justify-between items-center">
+                  <div><strong class="text-white">王雯欣 / 何龢</strong></div>
+                  <span class="text-slate-300">凌網科技工程師 / 在想創意工作室負責人</span>
+                </div>
+              </div>
+            </div>
+          `
+        },
+        {
+          id: "analytics",
+          code: "06 · PROFILE & CONTACT",
+          shortName: "能力雷達與聯絡",
+          title: "選才能力雷達與學系聯絡站",
+          icon: "📡",
+          color: 0xf43f5e,
+          pos: [0, 0, -7.2],
+          camOffset: [0, 6.5, -14.5],
+          summary: "依 ColleGo! 官方統計呈現本系重視之多元能力與性格特質比例，並提供招生與系辦聯絡窗口。",
+          render: () => `
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-[#d4af37]">ColleGo! 學系重視能力與特質分布</span>
+              <div class="flex gap-1">
+                <button type="button" id="chart-mode-ability" class="px-2.5 py-1 rounded text-[11px] font-semibold bg-[#d4af37] text-slate-950 cursor-pointer">多元能力</button>
+                <button type="button" id="chart-mode-trait" class="px-2.5 py-1 rounded text-[11px] font-semibold bg-slate-800 text-slate-300 cursor-pointer">性格特質</button>
+              </div>
+            </div>
+            <div class="relative h-64 w-full rounded-xl bg-slate-900/70 border border-slate-800 p-2">
+              <canvas id="collegoChart"></canvas>
+            </div>
+            <div class="rounded-xl bg-slate-900/80 border border-[#d4af37]/30 p-4 space-y-2 text-xs">
+              <div class="font-bold text-[#f3e5ab] text-sm">聯絡靜宜大學人工智慧應用學系</div>
+              <div class="text-slate-300">📍 地址：433303 臺中市沙鹿區臺灣大道7段200號（校本部）</div>
+              <div class="text-slate-300">📞 電話：(04) 2632-8001 分機 18030～18033</div>
+              <div class="text-slate-300 flex items-center justify-between gap-2">
+                <span>✉️ 信箱：<code class="text-[#38bdf8]">pu20730@pu.edu.tw</code></span>
+                <button type="button" id="copy-email-btn" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-[#d4af37] hover:text-slate-950 text-[11px] transition cursor-pointer">複製信箱</button>
+              </div>
+              <div class="pt-1 flex flex-wrap gap-2">
+                <a href="https://aai.pu.edu.tw/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#38bdf8]/15 border border-[#38bdf8]/40 text-[#38bdf8] hover:bg-[#38bdf8]/25 transition">學系官網 ↗</a>
+                <a href="https://collego.edu.tw/Highschool/DepartmentIntro?dept_id=018067" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#d4af37]/15 border border-[#d4af37]/40 text-[#f3e5ab] hover:bg-[#d4af37]/25 transition">ColleGo 專頁 ↗</a>
+              </div>
+            </div>
+          `,
+          onMount: () => {
+            const abilityData = {
+              labels: ["語文理解與表達", "主動學習", "問題解決", "程式設計", "專注力", "邏輯推理", "數理科學", "快速知覺總結", "批判思考", "自省促進"],
+              values: [15, 15, 15, 15, 10, 10, 5, 5, 5, 5]
+            };
+            const traitData = {
+              labels: ["主動積極", "樂群敬業", "開朗活潑", "堅毅負責", "探究冒險", "變通開創", "合作互助", "自信肯定"],
+              values: [15, 15, 15, 15, 10, 10, 10, 10]
+            };
+            const ctx = document.getElementById("collegoChart").getContext("2d");
+            let chartInstance = new Chart(ctx, {
+              type: "bar",
+              data: {
+                labels: abilityData.labels,
+                datasets: [{
+                  label: "重視比例 (%)",
+                  data: abilityData.values,
+                  backgroundColor: "rgba(56, 189, 248, 0.72)",
+                  borderColor: "#d4af37",
+                  borderWidth: 1,
+                  borderRadius: 4
+                }]
+              },
+              options: {
+                indexAxis: "y",
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false }
+                },
+                scales: {
+                  x: { max: 20, ticks: { color: "#94a3b8", font: { size: 10 } }, grid: { color: "rgba(255,255,255,0.06)" } },
+                  y: { ticks: { color: "#e2e8f0", font: { size: 10 } }, grid: { display: false } }
+                }
+              }
+            });
+
+            const btnAb = document.getElementById("chart-mode-ability");
+            const btnTr = document.getElementById("chart-mode-trait");
+            const updateChart = (mode) => {
+              const d = mode === "ability" ? abilityData : traitData;
+              chartInstance.data.labels = d.labels;
+              chartInstance.data.datasets[0].data = d.values;
+              chartInstance.data.datasets[0].backgroundColor = mode === "ability" ? "rgba(56, 189, 248, 0.72)" : "rgba(212, 175, 55, 0.78)";
+              chartInstance.update();
+              btnAb.className = mode === "ability" ? "px-2.5 py-1 rounded text-[11px] font-semibold bg-[#d4af37] text-slate-950 cursor-pointer" : "px-2.5 py-1 rounded text-[11px] font-semibold bg-slate-800 text-slate-300 cursor-pointer";
+              btnTr.className = mode === "trait" ? "px-2.5 py-1 rounded text-[11px] font-semibold bg-[#d4af37] text-slate-950 cursor-pointer" : "px-2.5 py-1 rounded text-[11px] font-semibold bg-slate-800 text-slate-300 cursor-pointer";
+            };
+            btnAb.addEventListener("click", () => updateChart("ability"));
+            btnTr.addEventListener("click", () => updateChart("trait"));
+
+            const copyBtn = document.getElementById("copy-email-btn");
+            copyBtn.addEventListener("click", () => {
+              const email = "pu20730@pu.edu.tw";
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(email).then(() => showToast("已複製系辦信箱：" + email)).catch(() => fallbackCopy(email));
+              } else {
+                fallbackCopy(email);
+              }
+            });
+          }
+        }
+      ];
+
+      function renderTrackBox(track) {
+        return `
+          <div class="flex items-center justify-between gap-2">
+            <div class="font-bold text-white text-sm">${track.name}</div>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-[#38bdf8]/20 text-[#38bdf8] shrink-0">${track.tag}</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 pt-1">
+            ${track.courses.map(c => `<span class="px-2.5 py-1 rounded-md bg-slate-800/90 border border-slate-700 text-xs text-slate-200">${c}</span>`).join("")}
+          </div>
+        `;
+      }
+
+      function fallbackCopy(text) {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand("copy"); showToast("已複製：" + text); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+
+      // ==========================================
+      // 2. UI State & Drawer Controls
+      // ==========================================
+      let activeIndex = -1;
+      let autoOrbit = true;
+      let tourTimer = null;
+
+      const drawer = document.getElementById("detail-drawer");
+      const drawerBadge = document.getElementById("drawer-badge");
+      const drawerTitle = document.getElementById("drawer-title");
+      const drawerBody = document.getElementById("drawer-body");
+      const drawerStep = document.getElementById("drawer-step");
+      const dock = document.getElementById("landmark-dock");
+      const toastEl = document.getElementById("toast");
+
+      let toastTimer = null;
+      function showToast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.remove("opacity-0");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastEl.classList.add("opacity-0"), 2400);
+      }
+
+      // Populate Dock
+      LANDMARKS.forEach((lm, idx) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.dataset.idx = idx;
+        btn.className = "dock-btn px-3 py-1.5 rounded-full text-xs font-medium text-slate-200 hover:bg-[#d4af37]/20 hover:text-[#f3e5ab] transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer";
+        btn.innerHTML = `<span>${lm.icon}</span><span>${lm.shortName}</span>`;
+        btn.addEventListener("click", () => selectLandmark(idx));
+        dock.appendChild(btn);
+      });
+
+      function selectLandmark(idx) {
+        activeIndex = idx;
+        const lm = LANDMARKS[idx];
+        drawerBadge.textContent = lm.code;
+        drawerTitle.textContent = lm.title;
+        drawerBody.innerHTML = `<p class="text-xs text-slate-300 leading-relaxed">${lm.summary}</p>` + lm.render();
+        drawerStep.textContent = `${idx + 1} / ${LANDMARKS.length}`;
+        drawer.classList.remove("translate-x-[115%]");
+
+        if (typeof lm.onMount === "function") {
+          lm.onMount();
+        }
+
+        // Highlight dock button
+        document.querySelectorAll(".dock-btn").forEach((b, i) => {
+          if (i === idx) {
+            b.classList.add("bg-[#d4af37]", "text-slate-950", "font-bold");
+            b.classList.remove("text-slate-200", "hover:bg-[#d4af37]/20");
+          } else {
+            b.classList.remove("bg-[#d4af37]", "text-slate-950", "font-bold");
+            b.classList.add("text-slate-200", "hover:bg-[#d4af37]/20");
+          }
+        });
+
+        // Fly camera
+        flyToLandmark(lm);
+      }
+
+      function closeDrawer() {
+        drawer.classList.add("translate-x-[115%]");
+        activeIndex = -1;
+        document.querySelectorAll(".dock-btn").forEach((b) => {
+          b.classList.remove("bg-[#d4af37]", "text-slate-950", "font-bold");
+          b.classList.add("text-slate-200", "hover:bg-[#d4af37]/20");
+        });
+      }
+
+      document.getElementById("drawer-close").addEventListener("click", closeDrawer);
+      document.getElementById("drawer-prev").addEventListener("click", () => {
+        const nextIdx = activeIndex <= 0 ? LANDMARKS.length - 1 : activeIndex - 1;
+        selectLandmark(nextIdx);
+      });
+      document.getElementById("drawer-next").addEventListener("click", () => {
+        const nextIdx = (activeIndex + 1) % LANDMARKS.length;
+        selectLandmark(nextIdx);
+      });
+
+      // ==========================================
+      // 3. Welcome Screen & Tour
+      // ==========================================
+      const welcomeOverlay = document.getElementById("welcome-overlay");
+      const loadingBar = document.getElementById("loading-bar");
+      const loadingStatus = document.getElementById("loading-status");
+      const enterBtn = document.getElementById("enter-island-btn");
+
+      setTimeout(() => { loadingBar.style.width = "65%"; }, 250);
+      setTimeout(() => {
+        loadingBar.style.width = "100%";
+        loadingStatus.textContent = "AI 智慧領航島已就緒，歡迎登島探索！";
+      }, 700);
+
+      enterBtn.addEventListener("click", () => {
+        welcomeOverlay.classList.add("opacity-0", "pointer-events-none");
+        setTimeout(() => { welcomeOverlay.style.display = "none"; }, 700);
+        selectLandmark(0);
+      });
+
+      const btnOrbit = document.getElementById("btn-orbit");
+      btnOrbit.addEventListener("click", () => {
+        autoOrbit = !autoOrbit;
+        btnOrbit.textContent = `自動旋轉: ${autoOrbit ? "開" : "關"}`;
+      });
+
+      document.getElementById("btn-reset").addEventListener("click", () => {
+        stopTour();
+        closeDrawer();
+        resetCamera();
+        showToast("已重置島嶼全景視角");
+      });
+
+      const btnTour = document.getElementById("btn-tour");
+      function stopTour() {
+        if (tourTimer) {
+          clearInterval(tourTimer);
+          tourTimer = null;
+          btnTour.innerHTML = `<span>✦</span><span>一鍵導覽</span>`;
+        }
+      }
+      btnTour.addEventListener("click", () => {
+        if (tourTimer) {
+          stopTour();
+          showToast("已停止自動導覽");
+          return;
+        }
+        let step = activeIndex >= 0 ? activeIndex : 0;
+        selectLandmark(step);
+        btnTour.innerHTML = `<span>❚❚</span><span>停止導覽</span>`;
+        showToast("啟動 6 大地標自動導覽");
+        tourTimer = setInterval(() => {
+          step = (step + 1) % LANDMARKS.length;
+          selectLandmark(step);
+        }, 5500);
+      });
+
+      // ==========================================
+      // 4. Three.js 3D Island Scene + 2D Fallback
+      // ==========================================
+      const container = document.getElementById("canvas-container");
+      const labelsLayer = document.getElementById("labels-layer");
+      const fallback2D = document.getElementById("fallback-2d");
+      const fallbackGrid = document.getElementById("fallback-grid");
+
+      let scene, camera, renderer, islandGroup;
+      let targetSpherical = { radius: 22, theta: 0.6, phi: 1.05 };
+      let currentSpherical = { radius: 22, theta: 0.6, phi: 1.05 };
+      let targetLookAt = new THREE.Vector3(0, 1.2, 0);
+      let currentLookAt = new THREE.Vector3(0, 1.2, 0);
+      const buildingMeshes = [];
+      const floatingObjects = [];
+      const labelElements = [];
+
+      function resetCamera() {
+        targetSpherical = { radius: 22, theta: 0.6, phi: 1.05 };
+        targetLookAt.set(0, 1.2, 0);
+      }
+
+      function flyToLandmark(lm) {
+        const p = new THREE.Vector3(lm.pos[0], lm.pos[1] + 1.4, lm.pos[2]);
+        const c = new THREE.Vector3(lm.camOffset[0], lm.camOffset[1], lm.camOffset[2]);
+        const diff = c.clone().sub(p);
+        const r = Math.max(9, diff.length());
+        const phi = Math.acos(Math.min(0.95, Math.max(-0.95, diff.y / r)));
+        const theta = Math.atan2(diff.x, diff.z);
+        targetLookAt.copy(p);
+        targetSpherical = { radius: r, theta, phi };
+      }
+
+      function activate2DFallback() {
+        container.classList.add("hidden");
+        labelsLayer.classList.add("hidden");
+        fallback2D.classList.remove("hidden");
+        fallbackGrid.innerHTML = LANDMARKS.map((lm, idx) => `
+          <button type="button" data-fb-idx="${idx}" class="fb-card rounded-xl bg-slate-900/80 border border-[#d4af37]/35 hover:border-[#38bdf8] p-4 text-left transition cursor-pointer">
+            <div class="text-xl mb-1">${lm.icon}</div>
+            <div class="text-[10px] text-[#38bdf8] tracking-widest uppercase">${lm.code}</div>
+            <div class="font-serif-tc text-base font-bold text-white mt-0.5">${lm.title}</div>
+            <p class="text-xs text-slate-400 mt-1 line-clamp-2">${lm.summary}</p>
+          </button>
+        `).join("");
+        document.querySelectorAll(".fb-card").forEach(card => {
+          card.addEventListener("click", () => selectLandmark(Number(card.dataset.fbIdx)));
+        });
+      }
+
+      function init3D() {
+        try {
+          if (typeof THREE === "undefined") throw new Error("Three.js missing");
+          renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+          renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+          renderer.setSize(window.innerWidth, window.innerHeight);
+          renderer.shadowMap.enabled = true;
+          container.appendChild(renderer.domElement);
+        } catch (err) {
+          activate2DFallback();
+          return;
+        }
+
+        scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x06101c, 0.018);
+
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+
+        // Lighting
+        const ambient = new THREE.AmbientLight(0xbcd4f5, 0.75);
+        scene.add(ambient);
+
+        const sun = new THREE.DirectionalLight(0xfff1d0, 1.3);
+        sun.position.set(14, 24, 12);
+        sun.castShadow = true;
+        scene.add(sun);
+
+        const cyanLight = new THREE.PointLight(0x38bdf8, 1.4, 30);
+        cyanLight.position.set(-8, 6, -6);
+        scene.add(cyanLight);
+
+        const goldLight = new THREE.PointLight(0xd4af37, 1.2, 30);
+        goldLight.position.set(8, 5, 8);
+        scene.add(goldLight);
+
+        islandGroup = new THREE.Group();
+        scene.add(islandGroup);
+
+        // Base Ocean Plane
+        const oceanGeo = new THREE.CircleGeometry(48, 64);
+        const oceanMat = new THREE.MeshStandardMaterial({
+          color: 0x071728,
+          roughness: 0.35,
+          metalness: 0.65
+        });
+        const ocean = new THREE.Mesh(oceanGeo, oceanMat);
+        ocean.rotation.x = -Math.PI / 2;
+        ocean.position.y = -0.6;
+        scene.add(ocean);
+
+        // Glowing Cyber Grid Ring on Ocean
+        const ringGeo = new THREE.RingGeometry(11.8, 12.1, 64);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.4 });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = -0.48;
+        scene.add(ring);
+
+        // Main Island Platform
+        const islandBaseGeo = new THREE.CylinderGeometry(11.2, 9.5, 1.1, 10);
+        const islandBaseMat = new THREE.MeshStandardMaterial({ color: 0x0f253d, roughness: 0.7, metalness: 0.25 });
+        const islandBase = new THREE.Mesh(islandBaseGeo, islandBaseMat);
+        islandBase.position.y = -0.55;
+        islandBase.receiveShadow = true;
+        islandGroup.add(islandBase);
+
+        // Gold Trim Ring on Island
+        const trimGeo = new THREE.TorusGeometry(11.2, 0.08, 12, 64);
+        const trimMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, emissive: 0x55420b, metalness: 0.85, roughness: 0.2 });
+        const trim = new THREE.Mesh(trimGeo, trimMat);
+        trim.rotation.x = Math.PI / 2;
+        trim.position.y = 0.02;
+        islandGroup.add(trim);
+
+        // Subtle Roads / Pathways connecting center to landmarks
+        LANDMARKS.slice(1).forEach(lm => {
+          const dist = Math.hypot(lm.pos[0], lm.pos[2]);
+          const pathGeo = new THREE.BoxGeometry(0.45, 0.06, dist);
+          const pathMat = new THREE.MeshStandardMaterial({ color: 0x1e3a5f, emissive: 0x0c243d });
+          const path = new THREE.Mesh(pathGeo, pathMat);
+          path.position.set(lm.pos[0] / 2, 0.03, lm.pos[2] / 2);
+          path.rotation.y = Math.atan2(lm.pos[0], lm.pos[2]);
+          islandGroup.add(path);
+        });
+
+        // Build 6 Distinct Architectural Landmarks
+        LANDMARKS.forEach((lm, idx) => {
+          const g = new THREE.Group();
+          g.position.set(lm.pos[0], lm.pos[1], lm.pos[2]);
+          g.userData = { landmarkIndex: idx };
+
+          // Pedestal
+          const ped = new THREE.Mesh(
+            new THREE.CylinderGeometry(1.6, 1.85, 0.35, 8),
+            new THREE.MeshStandardMaterial({ color: 0x162e4a, metalness: 0.4, roughness: 0.5 })
+          );
+          ped.position.y = 0.175;
+          g.add(ped);
+
+          const accentMat = new THREE.MeshStandardMaterial({
+            color: lm.color,
+            emissive: lm.color,
+            emissiveIntensity: 0.32,
+            metalness: 0.7,
+            roughness: 0.25
+          });
+          const bodyMat = new THREE.MeshStandardMaterial({
+            color: 0xe2e8f0,
+            metalness: 0.25,
+            roughness: 0.4
+          });
+
+          if (lm.id === "hub") {
+            const tower = new THREE.Mesh(new THREE.BoxGeometry(2.1, 3.6, 2.1), bodyMat);
+            tower.position.y = 2.0;
+            g.add(tower);
+
+            const crown = new THREE.Mesh(new THREE.OctahedronGeometry(0.85, 0), accentMat);
+            crown.position.y = 4.8;
+            g.add(crown);
+            floatingObjects.push({ mesh: crown, baseY: 4.8, speed: 1.5 });
+          } else if (lm.id === "tracks") {
+            const offsets = [[-0.65, -0.65], [0.65, -0.65], [-0.65, 0.65], [0.65, 0.65]];
+            offsets.forEach(([ox, oz], k) => {
+              const col = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 2.2 + k * 0.3, 6), k % 2 === 0 ? accentMat : bodyMat);
+              col.position.set(ox, 1.3 + k * 0.15, oz);
+              g.add(col);
+            });
+          } else if (lm.id === "curriculum") {
+            for (let s = 0; s < 4; s++) {
+              const stepBox = new THREE.Mesh(new THREE.BoxGeometry(2.2 - s * 0.42, 0.65, 2.2 - s * 0.42), s === 3 ? accentMat : bodyMat);
+              stepBox.position.y = 0.6 + s * 0.65;
+              g.add(stepBox);
+            }
+          } else if (lm.id === "labs") {
+            const dome = new THREE.Mesh(new THREE.SphereGeometry(1.25, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2), bodyMat);
+            dome.position.y = 0.35;
+            g.add(dome);
+            const visor = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.16, 10, 24), accentMat);
+            visor.rotation.x = Math.PI / 2;
+            visor.position.y = 1.9;
+            g.add(visor);
+            floatingObjects.push({ mesh: visor, baseY: 1.9, speed: 2.0 });
+          } else if (lm.id === "faculty") {
+            const hall = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.8, 1.6), bodyMat);
+            hall.position.y = 1.25;
+            g.add(hall);
+            const roof = new THREE.Mesh(new THREE.ConeGeometry(1.8, 1.1, 4), accentMat);
+            roof.position.y = 2.7;
+            roof.rotation.y = Math.PI / 4;
+            g.add(roof);
+          } else {
+            const dish = new THREE.Mesh(new THREE.ConeGeometry(1.1, 1.8, 12), bodyMat);
+            dish.position.y = 1.25;
+            g.add(dish);
+            const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.42, 16, 16), accentMat);
+            beacon.position.y = 2.6;
+            g.add(beacon);
+            floatingObjects.push({ mesh: beacon, baseY: 2.6, speed: 2.3 });
+          }
+
+          // Tag all child meshes for raycasting
+          g.traverse(child => {
+            if (child.isMesh) {
+              child.userData.landmarkIndex = idx;
+              buildingMeshes.push(child);
+            }
+          });
+          islandGroup.add(g);
+
+          // Floating HTML Label
+          const lbl = document.createElement("button");
+          lbl.type = "button";
+          lbl.className = "landmark-label glass-hud rounded-full px-3 py-1 text-[11px] font-semibold text-white flex items-center gap-1.5 shadow-lg hover:border-[#d4af37]";
+          lbl.innerHTML = `<span>${lm.icon}</span><span>${lm.shortName}</span>`;
+          lbl.addEventListener("click", (e) => {
+            e.stopPropagation();
+            stopTour();
+            selectLandmark(idx);
+          });
+          labelsLayer.appendChild(lbl);
+          labelElements.push({ el: lbl, pos: new THREE.Vector3(lm.pos[0], 3.8, lm.pos[2]) });
+        });
+
+        // Decorative Low-Poly Trees / Nodes around the island
+        const nodePositions = [[-3.2, 2.5], [3.5, 2.2], [-2.8, -5.0], [3.2, -5.2], [-8.8, 1.2], [8.8, 1.0]];
+        nodePositions.forEach(([nx, nz]) => {
+          const tree = new THREE.Mesh(
+            new THREE.ConeGeometry(0.45, 1.3, 6),
+            new THREE.MeshStandardMaterial({ color: 0x0d9488, roughness: 0.7 })
+          );
+          tree.position.set(nx, 0.65, nz);
+          islandGroup.add(tree);
+        });
+
+        // Pointer Orbit & Raycast
+        let isDragging = false;
+        let dragDistance = 0;
+        let prevX = 0, prevY = 0;
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        const dom = renderer.domElement;
+        dom.addEventListener("pointerdown", (e) => {
+          isDragging = true;
+          dragDistance = 0;
+          prevX = e.clientX;
+          prevY = e.clientY;
+        });
+        window.addEventListener("pointermove", (e) => {
+          if (!isDragging) return;
+          const dx = e.clientX - prevX;
+          const dy = e.clientY - prevY;
+          dragDistance += Math.hypot(dx, dy);
+          prevX = e.clientX;
+          prevY = e.clientY;
+          targetSpherical.theta -= dx * 0.006;
+          targetSpherical.phi = Math.min(1.42, Math.max(0.35, targetSpherical.phi - dy * 0.005));
+        });
+        window.addEventListener("pointerup", (e) => {
+          if (!isDragging) return;
+          isDragging = false;
+          if (dragDistance < 6) {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const hits = raycaster.intersectObjects(buildingMeshes, false);
+            if (hits.length > 0 && hits[0].object.userData.landmarkIndex !== undefined) {
+              stopTour();
+              selectLandmark(hits[0].object.userData.landmarkIndex);
+            }
+          }
+        });
+        dom.addEventListener("wheel", (e) => {
+          e.preventDefault();
+          targetSpherical.radius = Math.min(34, Math.max(8.5, targetSpherical.radius + e.deltaY * 0.012));
+        }, { passive: false });
+
+        window.addEventListener("resize", () => {
+          if (!renderer || !camera) return;
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Animation Loop
+        const clock = new THREE.Clock();
+        function animate() {
+          requestAnimationFrame(animate);
+          const t = clock.getElapsedTime();
+
+          if (autoOrbit && !isDragging && activeIndex === -1) {
+            targetSpherical.theta += 0.0018;
+          }
+
+          currentSpherical.radius += (targetSpherical.radius - currentSpherical.radius) * 0.08;
+          currentSpherical.theta += (targetSpherical.theta - currentSpherical.theta) * 0.08;
+          currentSpherical.phi += (targetSpherical.phi - currentSpherical.phi) * 0.08;
+          currentLookAt.lerp(targetLookAt, 0.08);
+
+          const sinPhi = Math.sin(currentSpherical.phi);
+          camera.position.set(
+            currentLookAt.x + currentSpherical.radius * sinPhi * Math.sin(currentSpherical.theta),
+            currentLookAt.y + currentSpherical.radius * Math.cos(currentSpherical.phi),
+            currentLookAt.z + currentSpherical.radius * sinPhi * Math.cos(currentSpherical.theta)
+          );
+          camera.lookAt(currentLookAt);
+
+          floatingObjects.forEach((fo, i) => {
+            fo.mesh.position.y = fo.baseY + Math.sin(t * fo.speed + i) * 0.22;
+            fo.mesh.rotation.y += 0.012;
+          });
+
+          // Project 3D label positions to 2D screen
+          labelElements.forEach((item) => {
+            const v = item.pos.clone().project(camera);
+            if (v.z > 1) {
+              item.el.style.display = "none";
+            } else {
+              item.el.style.display = "flex";
+              item.el.style.left = ((v.x * 0.5 + 0.5) * window.innerWidth) + "px";
+              item.el.style.top = ((-v.y * 0.5 + 0.5) * window.innerHeight) + "px";
+            }
+          });
+
+          renderer.render(scene, camera);
+        }
+        animate();
+      }
+
+      window.addEventListener("load", init3D);
+    })();
+  </script>
+</body>
+</html>
